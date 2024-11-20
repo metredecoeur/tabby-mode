@@ -6,7 +6,8 @@
 ;; Author: Ragnar Dahlén <r.dahlen@gmail.com>
 ;; URL: https://github.com/ragnard/tabby-mode
 ;; Package-Requires: ((emacs "25.1"))
-;; Version: 1.0
+;; Package-Version: 20240107.2124
+;; Package-Revision: b656727247c5
 ;; Keywords: tools, convenience
 
 ;;; Commentary:
@@ -22,6 +23,7 @@
 (require 'subr-x)
 (require 'url)
 (require 'url-http)
+;; (require 'requests)
 
 (eval-when-compile
   (defvar url-http-end-of-headers))
@@ -33,6 +35,11 @@
 
 (defcustom tabby-api-url nil
   "URL to Tabby API."
+  :type 'string
+  :group 'tabby)
+
+(defcustom tabby-auth-token nil
+  "Authentication token for Tabby server."
   :type 'string
   :group 'tabby)
 
@@ -68,18 +75,23 @@ Should have same signature as `completing-read`."
     (segments . ((prefix . ,prefix)
                  (suffix . ,suffix)))))
 
+	  
 (defun tabby--get-completions (buffer lang prefix suffix callback)
-  "Async get completions for BUFFER using LANG, PREFIX and SUFFIX.
-When the request completes, CALLBACK will be invoked with the response."
-  (let* ((request (tabby--completions-request lang prefix suffix))
-         (url-request-method "POST")
-         (url-request-extra-headers `(("Content-Type" . "application/json")))
-         (url-request-data (json-encode request)))
+  (let* (
+	 (request-body (tabby--completions-request lang prefix suffix))
+	 (url-request-method "POST")
+	 (url-request-extra-headers `(("Content-Type" . "application/json")
+				      ("Accept" . "application/json")
+				      ("Authorization" . ,(format "access_token %s" tabby-auth-token))))
+	 (url-request-data (json-encode request-body)))
     (url-retrieve (tabby--completions-url)
-                  (lambda (_status)
-                    (goto-char url-http-end-of-headers)
-                    (let ((response (json-read)))
-                      (funcall callback buffer response))))))
+     (lambda (_status)
+       (goto-char url-http-end-of-headers)
+       (let ((response (json-read)))
+	 (funcall callback buffer response))))))
+
+
+
 
 (defun tabby--handle-completion-response (buffer response)
   "Handle a completions RESPONSE for a BUFFER."
@@ -101,10 +113,12 @@ See https://code.visualstudio.com/docs/languages/identifiers."
   (interactive)
   (when (not tabby-api-url)
     (error "Please configure the URL for your Tabby server. See customizable variable `tabby-api-url`"))
+  (when (not tabby-auth-token)
+    (error "Please configure the authorization token for your Tabby server. See customizable variable `tabby-auth-token`"))
   (let* ((lang (tabby--determine-language))
-         (prefix (buffer-substring (point-min) (point)))
+         (prefix (buffer-substring-no-properties (point-min) (point)))
          (suffix (unless (eobp)
-                   (buffer-substring (+ (point) 1) (point-max)))))
+                   (buffer-substring-no-properties (+ (point) 1) (point-max)))))
     (if lang
         (tabby--get-completions (current-buffer) lang prefix suffix 'tabby--handle-completion-response)
       (message "Unable to determine language for current buffer."))))
