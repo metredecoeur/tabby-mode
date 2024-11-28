@@ -23,7 +23,7 @@
 (require 'subr-x)
 (require 'url)
 (require 'url-http)
-;; (require 'requests)
+
 
 (eval-when-compile
   (defvar url-http-end-of-headers))
@@ -65,6 +65,52 @@ Should have same signature as `completing-read`."
   :type '(alist :key-type symbol :value-type string)
   :group 'tabby)
 
+(defvar tabby-suggestions '()
+  "Completion suggestions returned by Tabby")
+
+(defvar current-suggestion-index 0
+  "Index of the current suggestion being displayed")
+
+(defvar tabby-inline-overlay nil
+  "Overlay for displaying suggestions")
+
+(defun tabby--show-suggestion-overlay (suggestion)
+  "Show suggestion overlay as grayed out text after the cursor"
+  (when tabby-inline-overlay
+    (delete-overlay tabby-inline-overlay))
+  (setq tabby-inline-overlay (make-overlay (point) (point)))
+  (overlay-put tabby-inline-overlay 'after-string
+	       (propertize suggestion 'face '(:foreground "gray" :slant italic))))
+
+(defun tabby-toggle-suggestion ()
+  "Change displayed suggestion to the next one from the list"
+  (interactive)
+  (if (null tabby-suggestions)
+      (message "no suggestions provided")
+    (setq current-suggestion-index
+	  (mod (1+ current-suggestion-index) (length tabby-suggestions)))
+    (tabby--show-suggestion-overlay (nth current-suggestion-index tabby-suggestions))))
+
+(defun tabby-accept-suggestion ()
+  "Accept the currently displayed suggestion and put it into the buffer"
+  (interactive)
+  (when (and tabby-suggestions tabby-inline-overlay)
+    (let ((suggestion (nth current-suggestion-index tabby-suggestions)))
+      (insert suggestion)
+      (delete-overlay tabby-inline-overlay)
+      (setq tabby-inline-overlay nil)
+      (setq tabby-suggestions nil)
+      (setq current-suggestion-index 0))))
+
+
+(defun tabby-clear-suggestion ()
+  "Clear currently displayed suggestion without accepting it"
+  (interactive)
+  (when tabby-inline-overlay
+    (delete-overlay tabby-inline-overlay)
+    (setq tabby-inline-overlay nil)))
+
+
 (defun tabby--completions-url ()
   "Return the API url for completions."
   (format "%s/v1/completions" (string-remove-suffix "/" tabby-api-url)))
@@ -91,17 +137,24 @@ Should have same signature as `completing-read`."
 	 (funcall callback buffer response))))))
 
 
-
-
 (defun tabby--handle-completion-response (buffer response)
   "Handle a completions RESPONSE for a BUFFER."
-  (let* ((choices (mapcar (lambda (c)
-                            (alist-get 'text c))
-                          (alist-get 'choices response)))
-         (text (funcall tabby-completion-function "Tabby: " choices)))
-    (when text
-      (with-current-buffer buffer
-        (insert text)))))
+  (setq tabby-suggestions (mapcar (lambda (c)
+				    (alist-get 'text c))
+				  (alist-get 'choices response)))
+  (setq current-suggestion-index -1)
+  (with-current-buffer buffer
+    (tabby-toggle-suggestion)
+    (redisplay)))
+
+
+  ;; (let* ((choices (mapcar (lambda (c)
+  ;;                           (alist-get 'text c))
+  ;;                         (alist-get 'choices response)))	 
+    ;;      (text (funcall tabby-completion-function "Tabby: " choices)))
+    ;; (when text
+    ;;   (with-current-buffer buffer
+    ;;     (insert text)))))
 
 (defun tabby--determine-language ()
   "Determine the language identifier for the current buffer.
@@ -125,7 +178,10 @@ See https://code.visualstudio.com/docs/languages/identifiers."
 
 (define-minor-mode tabby-mode
   "A minor mode for the Tabby AI coding assistant."
-  :keymap '((["C-<tab>"] . tabby-complete)))
+  :keymap '((["C-<tab>"] . tabby-complete)
+	    (["C-c a"] . tabby-accept-suggestion)
+	    (["C-c t"] . tabby-toggle-suggestion)
+	    (["C-c c"] . tabby-clear-suggestion)))
 
 (provide 'tabby-mode)
 
