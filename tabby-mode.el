@@ -6,7 +6,8 @@
 
 ;; Original Author: Ragnar Dahlén <r.dahlen@gmail.com>
 ;; Contributor: metredecoeur https://github.com/metredecoeur
-;; URL: https://github.com/ragnard/tabby-mode
+;; Original URL: https://github.com/ragnard/tabby-mode
+;; Forked URL: https://github.com//metredecoeur/tabby-mode
 ;; Package-Requires: ((emacs "25.1"))
 ;; Package-Version: 20240107.2124
 ;; Package-Revision: b656727247c5
