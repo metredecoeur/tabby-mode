@@ -43,12 +43,6 @@
   :type 'string
   :group 'tabby)
 
-(defcustom tabby-completion-function 'completing-read
-  "Function to use when selecting a completion.
-Should have same signature as `completing-read`."
-  :type 'symbol
-  :group 'tabby)
-
 (defcustom tabby-mode-language-alist
   '((c-mode . "c")
     (c++-mode . "cpp")
@@ -147,14 +141,6 @@ Should have same signature as `completing-read`."
     (tabby-toggle-suggestion)
     (redisplay)))
 
-
-  ;; (let* ((choices (mapcar (lambda (c)
-  ;;                           (alist-get 'text c))
-  ;;                         (alist-get 'choices response)))	 
-    ;;      (text (funcall tabby-completion-function "Tabby: " choices)))
-    ;; (when text
-    ;;   (with-current-buffer buffer
-    ;;     (insert text)))))
 
 (defun tabby--determine-language ()
   "Determine the language identifier for the current buffer.
