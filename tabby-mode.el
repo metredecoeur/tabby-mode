@@ -1,9 +1,11 @@
 ;;; tabby-mode.el --- Minor mode for the Tabby AI coding assistant -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2023 Authors
+;; Copyright (C) 2025 Contributor
 ;; SPDX-License-Identifier: Apache-2.0
 
-;; Author: Ragnar Dahlén <r.dahlen@gmail.com>
+;; Original Author: Ragnar Dahlén <r.dahlen@gmail.com>
+;; Contributor: metredecoeur https://github.com/metredecoeur
 ;; URL: https://github.com/ragnard/tabby-mode
 ;; Package-Requires: ((emacs "25.1"))
 ;; Package-Version: 20240107.2124
@@ -16,6 +18,15 @@
 ;; assistant. A single interactive function, `tabby-complete`, can be
 ;; used to send the coding context to a Tabby API instance, and select
 ;; a suggested code change.
+
+
+;; Contributed enhancements:
+;; - Addition of authentication token `tabby-auth-token` for the `tabby-api-url` endpoint.
+;; - Alternative method for displaying suggestions, through the use of inline overlays.
+;; - New interactive functions for improved user experience:
+;;   - `tabby-toggle-suggestion` - cycles through completion options returned by Tabby
+;;   - `tabby-accept-suggestion` - inserts suggested text into the buffer
+;;   - `tabby-clear-suggestion` - discards the displayed suggestion
 
 ;;; Code:
 
